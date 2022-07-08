@@ -18,35 +18,6 @@ else:
     logging.error("'GITHUB_TOKEN' environment variable was not set")
     sys.exit("Must set 'GITHUB_TOKEN' environment variable")
 
-# Parse command line arguments
-parser = argparse.ArgumentParser(
-    description="List GitHub organization repos and their admins."
-)
-parser.add_argument(
-    "organizations",
-    metavar="org",
-    type=str,
-    nargs="+",
-    help="List of GitHub Organizations to analyze",
-)
-parser.add_argument(
-    "--quiet", help="Do not print results to stdout", action="store_true", default=False
-)
-parser.add_argument(
-    "--json",
-    help="Export results to github_org_repo_access.json",
-    action="store_true",
-    default=False,
-)
-parser.add_argument(
-    "--csv",
-    help="Export results to github_org_repo_access.csv",
-    action="store_true",
-    default=False,
-)
-
-args = parser.parse_args()
-
 # Set up GitHub API client
 gh = Github(_TOKEN)
 
@@ -110,15 +81,46 @@ def export_results_csv(results):
 
     with open("github_org_repo_access.csv", "w") as f:
         writer = csv.writer(f)
-        writer.writerow(["org", "repo", "admins"])
+        writer.writerow(["repo", "org", "admins", "private"])
         for result in results:
             logging.info(f"result: {result}")
             result["admins"] = convert_admins_dict_to_string(result)
             writer.writerow(result.values())
 
 
-# Main entry point
 if __name__ == "__main__":
+    """Main program entrypoint when run directly."""
+    # Parse command line arguments
+    parser = argparse.ArgumentParser(
+        description="List GitHub organization repos and their admins."
+    )
+    parser.add_argument(
+        "organizations",
+        metavar="org",
+        type=str,
+        nargs="+",
+        help="List of GitHub Organizations to analyze",
+    )
+    parser.add_argument(
+        "--quiet",
+        help="Do not print results to stdout",
+        action="store_true",
+        default=False,
+    )
+    parser.add_argument(
+        "--json",
+        help="Export results to github_org_repo_access.json",
+        action="store_true",
+        default=False,
+    )
+    parser.add_argument(
+        "--csv",
+        help="Export results to github_org_repo_access.csv",
+        action="store_true",
+        default=False,
+    )
+    args = parser.parse_args()
+
     orgs = args.organizations
 
     results = []
@@ -147,6 +149,7 @@ if __name__ == "__main__":
                         "name": repo.name,
                         "org": repo.organization.login,
                         "admins": admin_results,
+                        "private": repo.private,
                     }
                     logging.info(f"Adding result: {result}")
                     results.append(result)
